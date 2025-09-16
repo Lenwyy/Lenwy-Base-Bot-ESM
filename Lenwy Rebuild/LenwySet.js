@@ -24,7 +24,7 @@ const maxWidth = Math.min(terminalWidth, 50);
 // Konfigurasi Bot
 const config = {
   whatsapp: true,
-  telegram: false
+  telegram: false // Tahap Pengembangan, Belum Bisa Digunakan
 };
 
 // Fungsi utama

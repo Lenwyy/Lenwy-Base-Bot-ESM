@@ -15,7 +15,7 @@
 */
 
 // Import Module
-import { makeWASocket, useMultiFileAuthState, fetchLatestBaileysVersion } from "@whiskeysockets/baileys"
+import { makeWASocket, useMultiFileAuthState, fetchLatestBaileysVersion,  downloadContentFromMessage, getContentType } from "@whiskeysockets/baileys"
 import pino from "pino"
 import chalk from "chalk"
 import readline from "readline"
@@ -120,6 +120,42 @@ async function connectToWhatsApp() {
     // Import Handler 
     const { default: handler } = await import("./lenwy.js")
     handler(lenwy, m)
+
+    // Handler Tipe Media
+  const unwrapMessage = (m) => {
+    let msg = m?.message ?? m
+    while (msg?.ephemeralMessage || msg?.viewOnceMessage || msg?.viewOnceMessageV2 || msg?.viewOnceMessageV2Extension || msg?.documentWithCaptionMessage) {
+    msg =
+      msg?.ephemeralMessage?.message ??
+      msg?.viewOnceMessage?.message ??
+      msg?.viewOnceMessageV2?.message ??
+      msg?.viewOnceMessageV2Extension?.message ??
+      msg?.documentWithCaptionMessage?.message
+  }
+  return msg
+}
+
+// Download Media Message
+lenwy.downloadMediaMessage = async (input) => {
+  const root = input?.message ? input : { message: input }
+  const unwrapped = unwrapMessage(root.message)
+
+  const type = getContentType(unwrapped)
+  if (!type) throw new Error('Tidak ada media pada pesan')
+
+  const msgContent = unwrapped[type]
+  const mediaKind = type.replace('Message', '') // 'image' | 'video' | 'sticker' | 'audio' | 'document'
+
+  const stream = await downloadContentFromMessage(msgContent, mediaKind)
+  let buffer = Buffer.alloc(0)
+  for await (const chunk of stream) buffer = Buffer.concat([buffer, chunk])
+
+  const mimetype =
+    msgContent.mimetype ||
+    (mediaKind === 'sticker' ? 'image/webp' : undefined)
+
+  return { buffer, mimetype, type: mediaKind }
+}
   })
 }
 

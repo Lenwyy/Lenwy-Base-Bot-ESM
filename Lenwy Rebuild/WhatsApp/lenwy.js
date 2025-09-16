@@ -26,183 +26,156 @@ import ytdl from "ytdl-core"
 import Ai4Chat from "./scrape/Ai4Chat.js"
 import tiktok2 from "./scrape/Tiktok.js"
 
+import { writeExif } from "./lib/sticker.js"
+
+// Track Messages
+const processedMessages = new Set()
 
 // Export Handler
 export default async (lenwy, m) => {
     const msg = m.messages[0]
     if (!msg.message) return
 
+    // Jangan Balas Pesan Sendiri (Bot)
+    if (msg.key.fromMe) return
+
+    // Anti Double
+    if (processedMessages.has(msg.key.id)) return
+    processedMessages.add(msg.key.id)
+    setTimeout(() => processedMessages.delete(msg.key.id), 30000)
+
     const body = msg.message.conversation || msg.message.extendedTextMessage?.text || ""
     const sender = msg.key.remoteJid
     const pushname = msg.pushName || "Lenwy"
-    const args = body.slice(1).trim().split(" ")
+
+    // Default Quoted Lenwy
+    const pplu = fs.readFileSync(globalThis.MenuImage) // Ganti Sesuai Keinginan
+    const len = {
+        key: {
+            participant: `0@s.whatsapp.net`,
+            ...(msg.chat ? { remoteJid: `status@broadcast` } : {})
+        },
+        message: {
+            contactMessage: {
+                displayName: `${pushname}`,
+                vcard: `BEGIN:VCARD\nVERSION:3.0\nN:XL;Lenwy,;;;\nFN: Lenwy V2.2\nitem1.TEL;waid=${sender.split("@")[0]}:+${sender.split("@")[0]}\nitem1.X-ABLabel:Ponsel\nEND:VCARD`,
+                jpegThumbnail: pplu,
+                thumbnail: pplu,
+                sendEphemeral: true
+            }
+        }
+    }
+
+// Multi Prefix + Tanpa Prefix
+let usedPrefix = null
+    for (const pre of globalThis.prefix) {
+        if (body.startsWith(pre)) {
+            usedPrefix = pre
+            break
+        }
+    }
+    if (!usedPrefix && !globalThis.noprefix) return
+
+    const args = usedPrefix
+        ? body.slice(usedPrefix.length).trim().split(" ")
+        : body.trim().split(" ")
+
     const command = args.shift().toLowerCase()
     const q = args.join(" ")
 
-    if (!body.startsWith(globalThis.prefix)) return
+    // Custom Reply
+    const lenwyreply = (teks) => lenwy.sendMessage(sender, { text: teks }, { quoted: len })
 
-    const lenwyreply = (teks) => lenwy.sendMessage(sender, { text: teks }, { quoted: msg })
-
+    // Kondisi
     const isGroup = sender.endsWith("@g.us")
     const isAdmin = globalThis.admin.includes(sender)
 
-    const MenuImage = fs.readFileSync(globalThis.MenuImage);
+    // Gambar Menu
+    const MenuImage = fs.readFileSync(globalThis.MenuImage)
 
-    switch (command) {
-        case "menu": {
-            await lenwy.sendMessage(sender, {
-                image: MenuImage,
-                caption: globalThis.lenwymenu,
-                mentions: [sender]
-            }, { quoted: msg })
-        }
-        break
+switch (command) {
+case "menu": {
+    await lenwy.sendMessage(sender, {
+        image: MenuImage,
+        caption: globalThis.lenwymenu,
+        mentions: [sender]
+    }, { quoted: len }) // pakai quoted privasi
+}
+break
 
-        case "admin": {
-            if (!isAdmin) return lenwyreply(globalThis.mess.admin)
-            lenwyreply("🎁 *Kamu Adalah Admin*")
-        }
-        break
+case "admin": {
+    if (!isAdmin) return lenwyreply(globalThis.mess.admin)
+    lenwyreply("🎁 *Kamu Adalah Admin*")
+}
+break
 
-        case "group": {
-            if (!isGroup) return lenwyreply(globalThis.mess.group)
-            lenwyreply("🎁 *Kamu Sedang Berada Di Dalam Grup*")
-        }
-        break
+case "group": {
+    if (!isGroup) return lenwyreply(globalThis.mess.group)
+    lenwyreply("🎁 *Kamu Sedang Berada Di Dalam Grup*")
+}
+break
 
-        case "ai": {
-            if (!q) return lenwyreply("☘️ *Contoh:* !ai Apa itu JavaScript?")
-            lenwyreply(globalThis.mess.wait)
-            try {
-                const lenai = await Ai4Chat(q)
-                await lenwyreply(`*Lenwy AI*\n\n${lenai}`)
-            } catch (error) {
-                console.error("Error:", error)
-                lenwyreply(globalThis.mess.error)
-            }
-        }
-        break
+case "ai": {
+    if (!q) return lenwyreply("☘️ *Contoh:* !ai Apa itu JavaScript?")
+    lenwyreply(globalThis.mess.wait)
+    try {
+        const lenai = await Ai4Chat(q)
+        await lenwyreply(`*Lenwy AI*\n\n${lenai}`)
+    } catch (error) {
+        console.error("Error:", error)
+        lenwyreply(globalThis.mess.error)
+    }
+}
+break
 
-        case "ttdl": {
-            if (!q) return lenwyreply("⚠ *Mana Link Tiktoknya?*")
-            lenwyreply(globalThis.mess.wait)
-            try {
-                const result = await tiktok2(q)
-                await lenwy.sendMessage(sender, {
-                    video: { url: result.no_watermark },
-                    caption: `*🎁 Lenwy Tiktok Downloader*`
-                }, { quoted: msg })
-            } catch (error) {
-                console.error("Error TikTok DL:", error)
-                lenwyreply(globalThis.mess.error)
-            }
-        }
-        break
+case "ttdl": {
+    if (!q) return lenwyreply("⚠ *Mana Link Tiktoknya?*")
+    lenwyreply(globalThis.mess.wait)
+    try {
+        const result = await tiktok2(q)
+        await lenwy.sendMessage(sender, {
+            video: { url: result.no_watermark },
+            caption: `*🎁 Lenwy Tiktok Downloader*`
+        }, { quoted: msg })
+    } catch (error) {
+        console.error("Error TikTok DL:", error)
+        lenwyreply(globalThis.mess.error)
+    }
+}
+break
 
-        case "igdl": {
-            if (!q) return lenwyreply("⚠ *Mana Link Instagramnya?*")
-            lenwyreply(globalThis.mess.wait)
-            try {
-                const apiUrl = `https://www.velyn.biz.id/api/downloader/instagram?url=${encodeURIComponent(q)}`
-                const response = await axios.get(apiUrl)
+case 's':
+case 'sticker': {
+  const quoted = msg.message?.extendedTextMessage?.contextInfo?.quotedMessage
+  const mediaSource = quoted || msg.message
 
-                if (!response.data.status || !response.data.data.url[0]) {
-                    throw new Error("Link tidak valid atau API error")
-                }
+  const hasMedia =
+    mediaSource?.imageMessage ||
+    mediaSource?.videoMessage ||
+    mediaSource?.stickerMessage ||
+    mediaSource?.documentMessage ||
+    mediaSource?.audioMessage
 
-                const { url, metadata } = response.data.data
-                const mediaUrl = url[0]
+  if (!hasMedia) return lenwyreply('⚠️ *Reply Media Yang Ingin Di Jadikan Sticker*')
 
-                if (metadata.isVideo) {
-                    await lenwy.sendMessage(sender, {
-                        video: { url: mediaUrl },
-                        caption: `*Instagram Reel*\n\n` +
-                            `*Username :* ${metadata.username}\n` +
-                            `*Likes :* ${metadata.like.toLocaleString()}\n` +
-                            `*Comments :* ${metadata.comment.toLocaleString()}\n\n` +
-                            `*Caption :* ${metadata.caption || "-"}\n\n` +
-                            `*Source :* ${q}`
-                    }, { quoted: msg })
-                } else {
-                    await lenwy.sendMessage(sender, {
-                        image: { url: mediaUrl },
-                        caption: `*Instagram Post*\n\n` +
-                            `*Username :* ${metadata.username}\n` +
-                            `*Likes :* ${metadata.like.toLocaleString()}\n\n` +
-                            `*Caption :* ${metadata.caption || "-"}`
-                    }, { quoted: msg })
-                }
-            } catch (error) {
-                console.error("Error Instagram DL:", error)
-                lenwyreply(globalThis.mess.error)
-            }
-        }
-        break
+  try {
+    const { buffer, mimetype } = await lenwy.downloadMediaMessage({ message: mediaSource })
 
-        case "ytdl": {
-            if (!q) return lenwyreply("⚠ *Mana Link YouTube-nya?*")
-            lenwyreply(globalThis.mess.wait)
-            try {
-                if (!ytdl.validateURL(q)) return lenwyreply("⚠ *Link YouTube tidak valid!*")
+    const stickerPath = await writeExif(
+      { mimetype, data: buffer },
+      { packname: globalThis.spackname, author: globalThis.sauthor }
+    )
 
-                const info = await ytdl.getInfo(q)
-                const title = info.videoDetails.title
-                const thumbnail = info.videoDetails.thumbnails[0].url
+    await lenwy.sendMessage(sender, { sticker: fs.readFileSync(stickerPath) }, { quoted: len })
+  } catch (e) {
+    console.error('Sticker Error:', e)
+    lenwyreply('❌ Gagal membuat sticker')
+  }
+}
+break
 
-                const format = ytdl.chooseFormat(info.formats, {
-                    quality: "highest",
-                    filter: "audioandvideo"
-                })
-
-                if (!format) return lenwyreply("❌ *Tidak bisa mendapatkan video dengan audio!*")
-
-                await lenwy.sendMessage(sender, {
-                    video: { url: format.url },
-                    caption: `*${title}*\n\n🎥 *YouTube Downloader*`,
-                    thumbnail: await (await fetch(thumbnail)).buffer()
-                }, { quoted: msg })
-            } catch (error) {
-                console.error("Error YouTube DL:", error)
-                lenwyreply(globalThis.mess.error)
-            }
-        }
-        break
-
-        case "tebakangka": {
-            const target = Math.floor(Math.random() * 100)
-            lenwy.tebakGame = { target, sender }
-            lenwyreply("*Tebak Angka 1 - 100*\n*Ketik !tebak [Angka]*")
-        }
-        break
-
-        case "tebak": {
-            if (!lenwy.tebakGame || lenwy.tebakGame.sender !== sender) return
-            const guess = parseInt(args[0])
-            if (isNaN(guess)) return lenwyreply("❌ *Masukkan Angka!*")
-
-            if (guess === lenwy.tebakGame.target) {
-                lenwyreply(`🎉 *Tebakkan Kamu Benar!*`)
-                delete lenwy.tebakGame
-            } else {
-                lenwyreply(guess > lenwy.tebakGame.target ? "*Terlalu Tinggi!*" : "*Terlalu rendah!*")
-            }
-        }
-        break
-
-        case "quote": {
-            const quotes = [
-                "Jangan menyerah, hari buruk akan berlalu.",
-                "Kesempatan tidak datang dua kali.",
-                "Kamu lebih kuat dari yang kamu kira.",
-                "Hidup ini singkat, jangan sia-siakan."
-            ]
-            const randomQuote = quotes[Math.floor(Math.random() * quotes.length)]
-            lenwyreply(`*Quote Hari Ini :*\n_"${randomQuote}"_`)
-        }
-        break
-
-        default: {
-            lenwyreply(globalThis.mess.default)
+        default: { // Reply Pesan Tidak Dikenal
+           // lenwyreply(globalThis.mess.default) 
         }
     }
 }
