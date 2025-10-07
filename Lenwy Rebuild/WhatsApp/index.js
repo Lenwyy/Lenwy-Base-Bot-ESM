@@ -94,69 +94,68 @@ async function connectToWhatsApp() {
     }
   })
 
-  // Console Log
-  lenwy.ev.on("messages.upsert", async (m) => {
-    const msg = m.messages[0]
-    if (!msg.message) return
+// Console Log
+lenwy.ev.on("messages.upsert", async (m) => {
+  const msg = m.messages[0]
+  if (!msg.message) return
 
-    const body =
-      msg.message.conversation ||
-      msg.message.extendedTextMessage?.text ||
-      ""
-    const sender = msg.key.remoteJid
-    const pushname = msg.pushName || "Lenwy"
+  const sender = msg.key.remoteJid
+  const pushname = msg.pushName || "Lenwy"
 
-    const listColor = ["red", "green", "yellow", "magenta", "cyan", "white", "blue"]
-    const randomColor = listColor[Math.floor(Math.random() * listColor.length)]
+  // Deteksi Tipe Pesan
+  const messageType = getContentType(msg.message)
+  let body = ""
+  let mediaType = null
 
-    console.log(
-      chalk.yellow.bold("Credit : Lenwy"),
-      chalk.green.bold("[ WhatsApp ]"),
-      chalk[randomColor](pushname),
-      chalk[randomColor](" : "),
-      chalk.white(body)
-    )
-
-    // Import Handler 
-    const { default: handler } = await import("./lenwy.js")
-    handler(lenwy, m)
-
-    // Handler Tipe Media
-  const unwrapMessage = (m) => {
-    let msg = m?.message ?? m
-    while (msg?.ephemeralMessage || msg?.viewOnceMessage || msg?.viewOnceMessageV2 || msg?.viewOnceMessageV2Extension || msg?.documentWithCaptionMessage) {
-    msg =
-      msg?.ephemeralMessage?.message ??
-      msg?.viewOnceMessage?.message ??
-      msg?.viewOnceMessageV2?.message ??
-      msg?.viewOnceMessageV2Extension?.message ??
-      msg?.documentWithCaptionMessage?.message
+  switch (messageType) {
+    case "conversation":
+      body = msg.message.conversation
+      break
+    case "extendedTextMessage":
+      body = msg.message.extendedTextMessage.text
+      break
+    case "imageMessage":
+      mediaType = "Image"
+      body = msg.message.imageMessage.caption || ""
+      break
+    case "videoMessage":
+      mediaType = "Video"
+      body = msg.message.videoMessage.caption || ""
+      break
+    case "stickerMessage":
+      mediaType = "Sticker"
+      break
+    case "audioMessage":
+      mediaType = "Audio"
+      break
+    case "documentMessage":
+      mediaType = "Document"
+      break
+    default:
+      body = ""
   }
-  return msg
-}
 
-// Download Media Message
-lenwy.downloadMediaMessage = async (input) => {
-  const root = input?.message ? input : { message: input }
-  const unwrapped = unwrapMessage(root.message)
+  // Filter Pesan Kosong
+  if (!body.trim() && !mediaType) return
 
-  const type = getContentType(unwrapped)
-  if (!type) throw new Error('Tidak ada media pada pesan')
+  // Log Pesan
+  const listColor = ["red", "green", "yellow", "magenta", "cyan", "white", "blue"]
+  const randomColor = listColor[Math.floor(Math.random() * listColor.length)]
+  const logTag = mediaType ? `[${mediaType}]` : ""
 
-  const msgContent = unwrapped[type]
-  const mediaKind = type.replace('Message', '') // 'image' | 'video' | 'sticker' | 'audio' | 'document'
+  console.log(
+    chalk.yellow.bold("Credit : Lenwy"),
+    chalk.green.bold("[ WhatsApp]"),
+    chalk[randomColor](pushname),
+    chalk[randomColor](" : "),
+    chalk.magenta.bold(`${logTag}`),
+    chalk.white(` ${body}`)
+  )
 
-  const stream = await downloadContentFromMessage(msgContent, mediaKind)
-  let buffer = Buffer.alloc(0)
-  for await (const chunk of stream) buffer = Buffer.concat([buffer, chunk])
-
-  const mimetype =
-    msgContent.mimetype ||
-    (mediaKind === 'sticker' ? 'image/webp' : undefined)
-
-  return { buffer, mimetype, type: mediaKind }
-}
-  })
+  // Import Handler
+  const { default: handler } = await import("./lenwy.js")
+  handler(lenwy, m, { body, mediaType, sender, pushname })
+})
 }
 
 // Default export agar bisa dipanggil dari LenwySet.js

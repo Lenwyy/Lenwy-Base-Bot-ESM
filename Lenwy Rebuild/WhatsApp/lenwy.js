@@ -21,7 +21,6 @@ import "./database/Menu/LenwyMenu.js"
 import fs from "fs"
 import axios from "axios"
 import fetch from "node-fetch"
-import ytdl from "ytdl-core"
 
 import Ai4Chat from "./scrape/Ai4Chat.js"
 import tiktok2 from "./scrape/Tiktok.js"
@@ -32,7 +31,8 @@ import { writeExif } from "./lib/sticker.js"
 const processedMessages = new Set()
 
 // Export Handler
-export default async (lenwy, m) => {
+export default async (lenwy, m, meta) => {
+    const { body, mediaType, sender, pushname } = meta
     const msg = m.messages[0]
     if (!msg.message) return
 
@@ -43,10 +43,6 @@ export default async (lenwy, m) => {
     if (processedMessages.has(msg.key.id)) return
     processedMessages.add(msg.key.id)
     setTimeout(() => processedMessages.delete(msg.key.id), 30000)
-
-    const body = msg.message.conversation || msg.message.extendedTextMessage?.text || ""
-    const sender = msg.key.remoteJid
-    const pushname = msg.pushName || "Lenwy"
 
     // Default Quoted Lenwy
     const pplu = fs.readFileSync(globalThis.MenuImage) // Ganti Sesuai Keinginan
