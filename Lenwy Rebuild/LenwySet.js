@@ -58,7 +58,7 @@ const config = {
     console.log(chalk.blue.bold(logo));
 
     console.log(chalk.white.bold(`${chalk.green.bold("📃  Informasi :")}         
-✉️  Script Lenwy Versi 2.2
+✉️  Script Lenwy Rebuild
 ✉️  Author : Lenwy
 ✉️  Gmail : ilenwyy@gmail.com
 ✉️  Instagram : Ilenwy_

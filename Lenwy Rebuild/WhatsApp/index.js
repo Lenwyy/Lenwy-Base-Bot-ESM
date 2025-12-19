@@ -1,6 +1,4 @@
-/*  
-
-  Made By Lenwy
+/* Made By Lenwy
   Base : Lenwy
   WhatsApp : wa.me/6283829814737
   Telegram : t.me/ilenwy
@@ -22,6 +20,8 @@ import readline from "readline"
 import path from "path"
 import { fileURLToPath } from "url"
 import os from "os"
+import fs from "fs";
+
 
 // Path ESM
 const __filename = fileURLToPath(import.meta.url)
@@ -88,7 +88,10 @@ async function connectToWhatsApp() {
     const { connection } = update
     if (connection === "close") {
       console.log(chalk.red("❌  Koneksi Terputus, Mencoba Menyambung Ulang"))
+      
+      // Sambungkan Ulang
       connectToWhatsApp()
+      
     } else if (connection === "open") {
       console.log(chalk.green("✔  Bot Berhasil Terhubung Ke WhatsApp"))
     }

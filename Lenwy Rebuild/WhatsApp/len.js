@@ -23,13 +23,6 @@ import fs from "fs";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Admin
-globalThis.admin = ['6283189202482@s.whatsapp.net']; // Sesuaikan Nomor Admin
-
-// Custom Credit Sticker
-globalThis.spackname = 'Lenwy Rebuild'; // Ganti Sesuai Keinginan
-globalThis.sauthor = 'Youtube : Lenwy\nBot: 0856-2497-5232'; // Ganti Sesuai Keinginan
-
 // Custom Prefix
 globalThis.prefix = ['#', '.', '!', '/']; // Multi Prefix (Custom Prefix)
 globalThis.noprefix = false; // True = Tanpa Prefix, False = Pakai Prefix 
@@ -44,4 +37,7 @@ globalThis.mess = {
     default: '📑 *Perintah Tidak Dikenali*',
     admin: '⚠ *Perintah Ini Hanya Bisa Digunakan Oleh Admin*',
     group: '⚠ *Perintah Ini Hanya Bisa Digunakan Di Dalam Grup*',
+    private: '⚠ *Perintah Ini Hanya Bisa Digunakan Di Dalam Private Chat*',
+    order: '⚠ *Kamu Hanya Bisa Melakukan Pembayaran Di Private Chat*',
+    creator: '⚠ *Perintah Ini Hanya Bisa Digunakan Oleh Owner*',
 };

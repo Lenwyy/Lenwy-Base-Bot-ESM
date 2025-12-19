@@ -10,7 +10,6 @@
 
   Copy Code?, Recode?, Rename?, Reupload?, Reseller? Taruh Credit Ya :D
 
-  Deskripsi: Fungsi Untuk Mengambil Respons AI
   Mohon Untuk Tidak Menghapus Watermark Di Dalam Kode Ini
 
 */
