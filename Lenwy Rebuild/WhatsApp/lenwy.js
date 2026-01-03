@@ -182,6 +182,7 @@ case "private": {
     if (!IsPriv) return lenwyreply(globalThis.mess.private)
     lenwyreply("🎁 *Kamu Sedang Berada Di Dalam Private Chat*")
 }
+break
 
 case "panel": {
 lenwyreply(`📑 *Halo Ini List Harga panelnya Ya*
@@ -288,3 +289,4 @@ break
         }
     }
 }
+
