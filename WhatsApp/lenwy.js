@@ -32,28 +32,11 @@ const groupMetadataCache = new Map();
 
 // Export Handler
 export default async (lenwy, m, meta) => {
-    const { body, mediaType, sender: originalSender, pushname } = meta 
+    const { body, mediaType, sender, pushname } = meta
     const msg = m.messages[0]
     if (!msg.message) return
 
-    const replyJid = msg.key.remoteJid;
-
-    let authJid = originalSender; 
-
-    const key = msg.key;
-    if (key.participantAlt) {
-      authJid = key.participantAlt;
-    } else if (key.remoteJidAlt) {
-      authJid = key.remoteJidAlt;
-    } 
-    
-    const sender = authJid; 
-    const normalizedSender = jidNormalizedUser(sender);
-
-    // console.log(chalk.yellow(`[DEBUG JID] Sender Original: ${originalSender}`));
-    // console.log(chalk.yellow(`[DEBUG JID] Sender Auth (PN): ${sender}`));
-    // console.log(chalk.green(`[DEBUG JID] Sender Normal: ${normalizedSender}`));
-
+    // Jangan Balas Pesan Sendiri (Bot)
     if (msg.key.fromMe) return
 
     // Anti Double
@@ -61,11 +44,12 @@ export default async (lenwy, m, meta) => {
     processedMessages.add(msg.key.id)
     setTimeout(() => processedMessages.delete(msg.key.id), 30000)
 
-    const pplu = fs.readFileSync(globalThis.MenuImage)
+    // Default Quoted Lenwy
+    const pplu = fs.readFileSync(globalThis.MenuImage) // Ganti Sesuai Keinginan
     const len = {
         key: {
             participant: `0@s.whatsapp.net`,
-            remoteJid: replyJid 
+            ...(msg.chat ? { remoteJid: `status@broadcast` } : {})
         },
         message: {
             contactMessage: {
@@ -78,6 +62,7 @@ export default async (lenwy, m, meta) => {
         }
     }
 
+// Multi Prefix + Tanpa Prefix
 let usedPrefix = null
     for (const pre of globalThis.prefix) {
         if (body.startsWith(pre)) {
@@ -95,26 +80,22 @@ let usedPrefix = null
     const q = args.join(" ")
 
     // Custom Reply
-    const lenwyreply = (teks) => lenwy.sendMessage(replyJid, { text: teks }, { quoted: len })
+    const lenwyreply = (teks) => lenwy.sendMessage(sender, { text: teks }, { quoted: len })
 
     // Gambar Menu
     const MenuImage = fs.readFileSync(globalThis.MenuImage)
 
     // Deteksi Grup & Admin
-    const isGroup = replyJid.endsWith("@g.us") 
-
-    // Hanya Private
-    const IsPriv = !isGroup
-
+    const isGroup = sender.endsWith("@g.us")
     let isAdmin = false
     let isBotAdmin = false
 
     if (isGroup) {
-      let metadata = groupMetadataCache.get(replyJid); 
+      let metadata = groupMetadataCache.get(sender);
       if (!metadata) {
         try {
-          metadata = await lenwy.groupMetadata(replyJid); 
-          groupMetadataCache.set(replyJid, metadata);
+          metadata = await lenwy.groupMetadata(sender);
+          groupMetadataCache.set(sender, metadata);
         } catch (e) {
           console.error("Gagal mengambil metadata grup:", e);
         }
@@ -134,7 +115,12 @@ let usedPrefix = null
         if (botParticipant) {
           isBotAdmin = botParticipant.admin === 'admin' || botParticipant.admin === 'superadmin';
         } else {
-          isBotAdmin = false;
+          try {
+            await lenwy.groupUpdateSubject(sender, metadata.subject);
+            isBotAdmin = true;
+          } catch (e) {
+            isBotAdmin = false;
+          }
         }
       }
     }
@@ -142,12 +128,11 @@ let usedPrefix = null
     // Premium
     const premiumPath = path.join(process.cwd(), 'WhatsApp', 'database', 'premium.json')
     const premiumUsers = JSON.parse(fs.readFileSync(premiumPath, 'utf8') || '[]')
-    const isPremium = premiumUsers.includes(normalizedSender) 
+    const isPremium = premiumUsers.includes(sender)
 
     const CreatorPath = path.join(process.cwd(), 'WhatsApp', 'database', 'creator.json')
     const isCreatorArray = JSON.parse(fs.readFileSync(CreatorPath, 'utf8') || '[]')
-    const isLenwy = isCreatorArray.includes(normalizedSender) 
-
+    const isLenwy = isCreatorArray.includes(sender) 
     // Command Yang Diperbolehkan User Free
     const allowedPrivateCommands = ['menu', 'aimenu', 'downmenu', 'downloadmenu']
 
@@ -158,10 +143,10 @@ let usedPrefix = null
 switch (command) {
 
 case "menu": {
-  await lenwy.sendMessage(replyJid, {
+  await lenwy.sendMessage(sender, {
     image: MenuImage,
     caption: globalThis.lenwymenu,
-    mentions: [normalizedSender]
+    mentions: [sender]
   }, { quoted: len })
 }
 break 
@@ -272,7 +257,7 @@ case "tiktok": {
 
         const videoUrl = response.data.no_watermark;
         
-        await lenwy.sendMessage(replyJid, {
+        await lenwy.sendMessage(sender, {
             video: { url: videoUrl },
             caption: `*🎁 Lenwy Tiktok Downloader*\n*[+] Powered by api.fromscratch.web.id*`
         }, { quoted: len }); //
