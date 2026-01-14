@@ -153,4 +153,4 @@ Pastikan Anda Sudah Menginstall Node.js (Versi LTS Direkomendasikan).
 ## 🤝 **Kontribusi**
 Kontribusi Selalu Terbuka! Jika Anda Ingin Meningkatkan Base Ini, Silakan Lakukan Fork Dan Ajukan Pull Request.
 
-### **Copyright © 2026 Lenwy**
+#### **Copyright © 2026 Lenwy**
