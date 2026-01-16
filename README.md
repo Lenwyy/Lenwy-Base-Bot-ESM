@@ -1,4 +1,4 @@
-# ☘️ **Lenwy Base Bot - ESM Version**
+# ☘️ **Lenwy Base - ESM Version**
 
 Lenwy Base Adalah Sebuah Starter-Kit (Base) Bot WhatsApp Berbasis Node.js Yang Dirancang Menggunakan Arsitektur ESM (ECMAScript Modules). Base Ini Menggunakan Pustaka Baileys Yang Ringan, Modular, Dan Mudah Dikembangkan Untuk Kebutuhan Bot Multi-Platform.
 
@@ -73,7 +73,7 @@ if (usePairingCode && !lenwy.authState.creds.registered) {
 
 **3. WhatsApp/len.js (Global Manager)**
 
-Mengatur Variabel Yang Bisa Diakses Di Seluruh File Tanpa Perlu Import Berulang Menggunakan globalThis. File Ini Mengatur
+Mengatur Variabel Yang Bisa Diakses Di Seluruh File Tanpa Perlu Import Berulang Menggunakan globalThis.
 
 ```javascript
 globalThis.prefix = ['#', '.', '!', '/']; // Multi Prefix
@@ -90,7 +90,7 @@ globalThis.mess = {
 
 **4. WhatsApp/lenwy.js (Feature Logic)**
 
-Tempat Semua Fitur Bot Diletakkan Menggunakan Struktur switch case. File Ini Adalah Jantung Dari Interaksi Bot. Contoh Implementasi Kondisi
+Tempat Semua Fitur Bot Diletakkan Menggunakan Struktur switch case. File Ini Adalah Jantung Dari Interaksi Bot. Contoh Implementasi Kondisi :
 
 ```javascript
 switch (command) {
